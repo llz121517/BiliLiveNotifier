@@ -1,5 +1,4 @@
-﻿// Core/Notifier.cs
-using Microsoft.Toolkit.Uwp.Notifications;
+﻿using Microsoft.Toolkit.Uwp.Notifications;
 using System.Diagnostics;
 
 namespace BiliLiveNotifier.Core;
@@ -17,7 +16,7 @@ public static class ToastNotifier
     {
         ToastNotificationManagerCompat.OnActivated += toastArgs =>
         {
-            LLog.Info($"[Toast 激活] 参数: {toastArgs.Argument}");
+            LLog.Info($"[Toast] 收到激活事件, 参数: {toastArgs.Argument}");
 
             var arguments = ToastArguments.Parse(toastArgs.Argument);
             if (arguments.TryGetValue("url", out var targetUrl))
@@ -25,26 +24,21 @@ public static class ToastNotifier
                 try
                 {
                     Process.Start(new ProcessStartInfo(targetUrl) { UseShellExecute = true });
-                    LLog.Info($"[浏览器已打开] 链接: {targetUrl}");
+                    LLog.Info($"[Toast] 已成功打开链接: {targetUrl}");
                 }
                 catch (Exception ex)
                 {
-                    LLog.Error($"[打开链接失败] 异常: {ex}");
+                    LLog.Error($"[Toast] 打开链接失败: {ex.Message}");
                 }
             }
         };
 
-        LLog.Debug("[Toast 监听器] 初始化完成");
+        LLog.Debug("[Toast] 监听器初始化完成");
     }
 
     /// <summary>
     /// 发送开播/特殊提醒通知
     /// </summary>
-    /// <param name="headerId">通知分组头ID (用于将同一主播的通知折叠)</param>
-    /// <param name="headerTitle">通知分组头显示名称 (如：主播昵称)</param>
-    /// <param name="title">通知标题 (如：直播间标题)</param>
-    /// <param name="subtitle">通知副标题 (如：分区信息、开播时长)</param>
-    /// <param name="url">点击跳转链接（可选，通常为直播间 URL）</param>
     public static void SendLiveNotification(
         string headerId,
         string headerTitle,
@@ -69,11 +63,11 @@ public static class ToastNotifier
             }
 
             builder.Show();
-            LLog.Info($"[Toast 已发送] 标题: {title}");
+            LLog.Info($"[Toast] 通知已发送, 标题: {title}");
         }
         catch (Exception ex)
         {
-            LLog.Error($"[Toast 发送失败] 异常: {ex}");
+            LLog.Error($"[Toast] 通知发送失败: {ex.Message}");
         }
     }
 }

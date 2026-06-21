@@ -4,7 +4,20 @@
     "method": "GET",
     "params": {
       "uid": "{0}"
-    },
-    "description": "通过UID获取真实直播间ID"
+    }
+  },
+  "GetLiveRoomInfo": {
+    "url": "https://api.live.bilibili.com/xlive/web-room/v1/index/getInfoByRoom",
+    "method": "GET",
+    "params": {
+      "room_id": "{0}"
+    }
+  },
+  "GetUserBirthday": {
+    "url": "https://api.bilibili.com/x/space/acc/info",
+    "method": "GET",
+    "params": {
+      "mid": "{0}"
+    }
   }
 }

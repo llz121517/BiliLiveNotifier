@@ -28,13 +28,19 @@ public static class ApiClient
     public static void LoadEndpoints(string jsonPath = "api_endpoints.json")
     {
         if (!File.Exists(jsonPath))
-            throw new FileNotFoundException($"API endpoints config not found: {jsonPath}");
+            throw new FileNotFoundException($"API 端点配置文件未找到: {jsonPath}");
 
         var json = File.ReadAllText(jsonPath);
-        _endpoints = JsonSerializer.Deserialize<Dictionary<string, ApiEndpointConfig>>(json)
-            ?? throw new InvalidOperationException("API endpoints config is empty");
 
-        LLog.Info($"[ApiClient] Loaded {_endpoints.Count} endpoint(s) from {jsonPath}");
+        var options = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        };
+
+        _endpoints = JsonSerializer.Deserialize<Dictionary<string, ApiEndpointConfig>>(json)
+            ?? throw new InvalidOperationException("API 端点配置文件内容为空");
+
+        LLog.Info($"[Api] 已加载 {_endpoints.Count} 个端点配置");
     }
 
     /// <summary>
@@ -45,10 +51,10 @@ public static class ApiClient
         params object[] args)
     {
         if (_endpoints == null)
-            throw new InvalidOperationException("Call LoadEndpoints() before requesting");
+            throw new InvalidOperationException("请先调用 LoadEndpoints() 加载配置");
 
         if (!_endpoints.TryGetValue(endpointName, out var config))
-            throw new ArgumentException($"Unknown API endpoint: '{endpointName}'");
+            throw new ArgumentException($"未知的 API 端点: '{endpointName}'");
 
         // 构建查询参数（支持 {0},{1}... 占位符）
         var queryParams = new List<string>();
@@ -65,32 +71,39 @@ public static class ApiClient
         }
 
         string url = $"{config.Url}?{string.Join("&", queryParams)}";
-        LLog.Debug($"[ApiClient] [{endpointName}] {config.Method} {url}");
+        LLog.Debug($"[Api] 发起请求 [{endpointName}] {url}");
 
         for (int attempt = 0; attempt <= 20; attempt++)
         {
             try
             {
                 var rawJson = await _http.GetStringAsync(url);
-                LLog.Debug($"[ApiClient] [{endpointName}] Raw Response: {rawJson}");
+
+                LLog.Debug($"[Api] [{endpointName}] 原始响应: {rawJson}");
 
                 var response = JsonSerializer.Deserialize<ApiModels<JsonObject>>(rawJson);
                 if (response == null) continue;
                 if (response.Code == 0 && response.Data != null) return response.Data;
-                if (response.Code == -799) continue;
+                if (response.Code == -799)
+                {
+                    LLog.Debug($"[Api] [{endpointName}] 触发风控(-799), 准备重试...");
+                    continue;
+                }
 
-                LLog.Warn($"[ApiClient] [{endpointName}] Biz Error Code:{response.Code}, Msg:{response.Message}");
+                LLog.Warn($"[Api] [{endpointName}] 业务错误, 错误码: {response.Code}, 信息: {response.Message}");
                 return null;
             }
             catch (OperationCanceledException) { throw; }
             catch (Exception ex)
             {
-                LLog.Debug($"[ApiClient] [{endpointName}] Attempt {attempt + 1}/21 failed: {ex.Message}");
+                // 仅在非首次失败或最后一次失败时记录，避免刷屏
+                if (attempt > 0 || attempt == 20)
+                    LLog.Debug($"[Api] [{endpointName}] 第 {attempt + 1}/21 次请求异常: {ex.Message}");
                 continue;
             }
         }
 
-        LLog.Error($"[ApiClient] [{endpointName}] All retries exhausted");
+        LLog.Error($"[Api] [{endpointName}] 重试次数已耗尽");
         return null;
     }
 }
