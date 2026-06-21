@@ -1,0 +1,10 @@
+{
+  "GetRoomIdByUid": {
+    "url": "https://api.live.bilibili.com/live_user/v1/Master/info",
+    "method": "GET",
+    "params": {
+      "uid": "{0}"
+    },
+    "description": "通过UID获取真实直播间ID"
+  }
+}

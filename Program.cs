@@ -33,20 +33,17 @@ class Program
             url: TestUrl
         );
 
-        long targetUid = 546195;
+        long uid = 546195;
 
-        long? roomId = await ApiOp.GetRoomIdByUidAsync(targetUid);
+        ApiClient.LoadEndpoints();
+
+        // 获取房间号
+        var data = await ApiClient.RequestAsync("GetRoomIdByUid", uid);
+        long? roomId = data.GetPath("info", "room_id")?.GetValue<long>();
 
         if (roomId.HasValue)
-        {
-            LLog.Info($"[初始化] UID:{targetUid} -> RoomID:{roomId.Value}");
-        }
+            LLog.Info($"[Init] UID:{uid} -> RoomID:{roomId}");
         else
-        {
-            LLog.Warn($"[初始化] 获取 UID:{targetUid} 的房间号失败");
-        }
-
-        LLog.Info("Waiting for user interaction... Press any key to exit.");
-        Console.ReadKey();
+            LLog.Warn($"[Init] UID:{uid} Failed to resolve RoomID");
     }
 }
