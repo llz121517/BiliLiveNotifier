@@ -23,17 +23,15 @@ public class ApiModels<T>
 /// </summary>
 public class ApiEndpointConfig
 {
-    [JsonPropertyName("url")]
     public string Url { get; set; } = string.Empty;
 
-    [JsonPropertyName("method")]
     public string Method { get; set; } = "GET";
 
-    [JsonPropertyName("params")]
     public Dictionary<string, string> Params { get; set; } = new();
 
-    [JsonPropertyName("description")]
     public string Description { get; set; } = string.Empty;
+
+    public Dictionary<string, string> ResponseMapping { get; set; } = new();
 }
 
 /// <summary>

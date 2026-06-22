@@ -4,6 +4,9 @@
     "method": "GET",
     "params": {
       "uid": "{0}"
+    },
+    "responseMapping": {
+      "roomId": "room_id"
     }
   },
   "GetLiveRoomInfo": {
@@ -11,6 +14,19 @@
     "method": "GET",
     "params": {
       "room_id": "{0}"
+    },
+    "responseMapping": {
+      "uname": "anchor_info.base_info.uname",
+      "face": "anchor_info.base_info.face",
+      "medalName": "anchor_info.medal_info.medal_name",
+      "roomId": "room_info.room_id",
+      "shortId": "room_info.short_id",
+      "title": "room_info.title",
+      "cover": "room_info.cover",
+      "liveStatus": "room_info.live_status",
+      "liveStartTime": "room_info.live_start_time",
+      "parentAreaName": "room_info.parent_area_name",
+      "areaName": "room_info.area_name"
     }
   },
   "GetUserBirthday": {
@@ -18,6 +34,9 @@
     "method": "GET",
     "params": {
       "mid": "{0}"
+    },
+    "responseMapping": {
+      "birthday": "birthday"
     }
   }
 }

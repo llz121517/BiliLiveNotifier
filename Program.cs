@@ -19,7 +19,7 @@ class Program
         if (args.Length > 0)
         {
             LLog.Info("[Boot] 由 Toast 后台激活启动, 进入休眠等待...");
-            Thread.Sleep(5000);
+            await Task.Delay(5000);
             return;
         }
 
@@ -49,18 +49,22 @@ class Program
             url: liveUrl
         );
 
-        Thread.Sleep(5000);
+        await Task.Delay(3000);
         // 业务层负责协调，ToastDemo 只接收 Uri
         var avatarUri = await ToastImageCache.GetLocalUriAsync("https://i1.hdslb.com/bfs/face/4c6e413e3789ef1bfaa738b05db977f4d7129858.jpg");
         var coverUri = await ToastImageCache.GetLocalUriAsync("https://i0.hdslb.com/bfs/live/new_room_cover/d57ca8a633b288333c1f0bb260a55ea46dca882b.jpg");
 
         // 传入已解析的本地 URI，ToastDemo 不感知网络/缓存
-        // ToastDemo.ShowMinimal(coverUri, avatarUri);
-        // ToastDemo.ShowWithAvatarAndTag(coverUri, avatarUri);
+        ToastDemo.ShowMinimal();
+        await Task.Delay(2000);
+        ToastDemo.ShowWithAvatarAndTag(avatarUri);
+        await Task.Delay(2000);
         ToastDemo.ShowWithCoverAndAvatar(coverUri, avatarUri);
-        // ToastDemo.ShowWithDualButtons(coverUri, avatarUri);
+        await Task.Delay(2000);
+        ToastDemo.ShowWithDualButtons(avatarUri);
 
-        Thread.Sleep(15000);
         ToastImageCache.ClearCache();
+
+        await ApiClientTester.RunTestAsync();
     }
 }
