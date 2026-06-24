@@ -11,8 +11,8 @@ public static class ApiClientTester
             ApiClient.LoadEndpoints("api_endpoints.json");
             long uid = 496751305;
 
-            var roomResult = await ApiClient.RequestMappedAsync("GetRoomIdByUid", uid);
-            Console.WriteLine("========== GetRoomIdByUid ==========");
+            var roomResult = await ApiClient.RequestMappedAsync("GetMasterInfo", uid);
+            Console.WriteLine("========== GetMasterInfo ==========");
             PrintDictionary(roomResult);
 
             // 安全提取 roomId
@@ -28,12 +28,12 @@ public static class ApiClientTester
                 return;
             }
 
-            var liveResult = await ApiClient.RequestMappedAsync("GetLiveRoomInfo", roomId.Value);
-            Console.WriteLine("\n========== GetLiveRoomInfo ==========");
+            var liveResult = await ApiClient.RequestMappedAsync("GetLiveRoomDetail", roomId.Value);
+            Console.WriteLine("\n========== GetLiveRoomDetail ==========");
             PrintDictionary(liveResult);
 
-            var birthdayResult = await ApiClient.RequestMappedAsync("GetUserBirthday", uid);
-            Console.WriteLine("\n========== GetUserBirthday ==========");
+            var birthdayResult = await ApiClient.RequestMappedAsync("GetUserInfo", uid);
+            Console.WriteLine("\n========== GetUserInfo ==========");
             PrintDictionary(birthdayResult);
         }
         catch (Exception ex)

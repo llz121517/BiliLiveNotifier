@@ -5,133 +5,9 @@
     "description": "Bilibili 直播状态监控与提醒核心 API 接口文档。返回体仅列出实际所需，并不代表全部返回。接口随时可能变动。版本号策略采用 SemVer 。",
     "endpoints": [
       {
-        "id": "get-room-id-by-uid",
-        "name": "UID 转换与房间 ID 获取",
-        "description": "通过用户 UID 获取其对应的真实直播间 ID (room_id)。此接口仅在程序初始化或添加或修改监控目标时调用一次。",
-        "http_method": "GET",
-        "base_url": "https://api.live.bilibili.com/live_user/v1/Master/info",
-        "request_parameters": [
-          {
-            "name": "uid",
-            "type": "integer (int64)",
-            "required": true,
-            "description": "目标 Bilibili 用户 UID。"
-          }
-        ],
-        "response_schema": {
-          "code": {
-            "type": "integer",
-            "description": "API 响应状态码，0 表示成功。"
-          },
-          "data": {
-            "type": "object",
-            "description": "响应数据主体。",
-            "properties": {
-              "room_id": {
-                "type": "integer (int64)",
-                "description": "直播间的真实 ID。作为桥梁参数，用于后续调用直播间详情接口。"
-              }
-            }
-          }
-        }
-      },
-      {
-        "id": "get-live-room-info",
-        "name": "直播间详情与实时状态获取",
-        "description": "获取直播间的详细信息及实时状态。此接口为高频轮询的核心数据源，包含主播基础信息与直播间动态数据。",
-        "http_method": "GET",
-        "base_url": "https://api.live.bilibili.com/xlive/web-room/v1/index/getInfoByRoom",
-        "request_parameters": [
-          {
-            "name": "room_id",
-            "type": "integer (int64)",
-            "required": true,
-            "description": "直播间的真实 ID（由 get-room-id-by-uid 获取）。"
-          }
-        ],
-        "response_schema": {
-          "code": {
-            "type": "integer",
-            "description": "API 响应状态码，0 表示成功。"
-          },
-          "data": {
-            "type": "object",
-            "description": "响应数据主体。",
-            "properties": {
-              "anchor_info": {
-                "type": "object",
-                "description": "主播基础信息模块。",
-                "properties": {
-                  "base_info": {
-                    "type": "object",
-                    "properties": {
-                      "uname": {
-                        "type": "string",
-                        "description": "主播昵称。"
-                      },
-                      "face": {
-                        "type": "string",
-                        "description": "主播头像 URL。"
-                      }
-                    }
-                  },
-                  "medal_info": {
-                    "type": "object",
-                    "properties": {
-                      "medal_name": {
-                        "type": "string",
-                        "description": "粉丝勋章名称。"
-                      }
-                    }
-                  }
-                }
-              },
-              "room_info": {
-                "type": "object",
-                "description": "直播间状态与配置模块。",
-                "properties": {
-                  "room_id": {
-                    "type": "integer (int64)",
-                    "description": "直播间真实 ID（用于数据校验）。"
-                  },
-                  "short_id": {
-                    "type": "integer (int64)",
-                    "description": "直播间短号。若不为 0，建议在 UI 中优先展示。"
-                  },
-                  "title": {
-                    "type": "string",
-                    "description": "直播间标题。"
-                  },
-                  "cover": {
-                    "type": "string",
-                    "description": "直播间封面图 URL。"
-                  },
-                  "live_status": {
-                    "type": "integer",
-                    "description": "直播状态核心标识：0-未开播，1-直播中，2-轮播中。"
-                  },
-                  "live_start_time": {
-                    "type": "integer (int64)",
-                    "description": "本次开播时间的 Unix 时间戳，秒级。用于计算已播时长  。"
-                  },
-                  "parent_area_name": {
-                    "type": "string",
-                    "description": "父分区名称（如：虚拟主播、游戏）。"
-                  },
-                  "area_name": {
-                    "type": "string",
-                    "description": "子分区名称（如：虚拟日常、主机游戏）。"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      {
-        "id": "get-user-birthday",
-        "name": "用户空间信息获取 (生日提取)",
-        "description": "通过用户 UID (mid) 获取其个人空间信息。在当前业务场景下，此接口仅用于提取用户的生日数据，以便在提醒卡片中展示或触发特殊样式逻辑。",
+        "id": "get-user-info",
+        "name": "用户空间信息获取（含生日与直播间基础信息）",
+        "description": "通过用户 UID (mid) 获取用户个人空间信息，包含生日、昵称、头像、直播间 ID 及简化直播状态。此接口在程序启动时调用一次，用于缓存用户画像和直播间 ID。",
         "http_method": "GET",
         "base_url": "https://api.bilibili.com/x/space/acc/info",
         "request_parameters": [
@@ -139,34 +15,214 @@
             "name": "mid",
             "type": "integer (int64)",
             "required": true,
-            "description": "目标用户的 Bilibili UID（等同于 get-room-id-by-uid 中的 uid 参数）。"
+            "description": "目标用户的 Bilibili UID。"
           }
         ],
         "response_schema": {
           "code": {
             "type": "integer",
-            "description": "API 响应状态码，0 表示请求成功。 -799 时为无效加扰信息，需重试"
-          },
-          "message": {
-            "type": "string",
-            "description": "API 响应状态描述，成功时通常为 'OK'。"
+            "description": "API 响应状态码：0-成功，-799-风控加扰需重试，-400-请求错误，-403-权限不足，-404-用户不存在。"
           },
           "data": {
             "type": "object",
-            "description": "响应数据主体，包含大量用户空间信息，但本系统仅解析并持久化 birthday 字段。",
+            "description": "响应数据主体。",
             "properties": {
+              "mid": {
+                "type": "integer (int64)",
+                "description": "用户 UID，用于数据校验。"
+              },
+              "name": {
+                "type": "string",
+                "description": "用户昵称。"
+              },
+              "face": {
+                "type": "string",
+                "description": "用户头像 URL。"
+              },
               "birthday": {
                 "type": "string",
-                "description": "用户的生日信息。格式通常为 'MM-DD'（例如 '04-28'）。若用户未填写或设置了隐私隐藏，该字段可能为空字符串。"
+                "description": "用户生日，格式 MM-DD（如 04-28）。若用户设置隐私则返回空字符串。"
+              },
+              "silence": {
+                "type": "integer",
+                "description": "封禁状态：0-正常，1-被封。"
+              },
+              "live_room": {
+                "type": "object",
+                "description": "直播间简化信息模块。",
+                "properties": {
+                  "roomStatus": {
+                    "type": "integer",
+                    "description": "直播间状态：0-无房间，1-有房间。"
+                  },
+                  "liveStatus": {
+                    "type": "integer",
+                    "description": "直播状态：0-未开播，1-直播中。"
+                  },
+                  "roomid": {
+                    "type": "integer (int64)",
+                    "description": "直播间 ID（长号），用于后续调用直播间详情接口。"
+                  },
+                  "title": {
+                    "type": "string",
+                    "description": "直播间标题（可能延迟，建议以 GetLiveRoomDetail 为准）。"
+                  },
+                  "cover": {
+                    "type": "string",
+                    "description": "直播间封面图 URL（可能延迟，建议以 GetLiveRoomDetail 为准）。"
+                  },
+                  "url": {
+                    "type": "string",
+                    "description": "直播间网页 URL。"
+                  },
+                  "watched_show": {
+                    "type": "object",
+                    "properties": {
+                      "num": {
+                        "type": "integer",
+                        "description": "看过本直播的总人数（历史累计，非实时在线）。"
+                      }
+                    }
+                  }
+                }
               }
             }
           }
-        }
+        },
+        "风控及鉴权": "无"
+      },
+      {
+        "id": "get-master-info",
+        "name": "主播详细信息获取（含粉丝勋章）",
+        "description": "通过用户 UID 获取主播详细信息，包含粉丝勋章名称（medal_name）。此接口在程序启动时调用一次，用于缓存粉丝勋章等静态信息。",
+        "http_method": "GET",
+        "base_url": "https://api.live.bilibili.com/live_user/v1/Master/info",
+        "request_parameters": [
+          {
+            "name": "uid",
+            "type": "integer (int64)",
+            "required": true,
+            "description": "目标用户的 Bilibili UID。"
+          }
+        ],
+        "response_schema": {
+          "code": {
+            "type": "integer",
+            "description": "API 响应状态码：0-成功，1-参数错误。"
+          },
+          "data": {
+            "type": "object",
+            "description": "响应数据主体。",
+            "properties": {
+              "info": {
+                "type": "object",
+                "description": "主播基本信息模块。",
+                "properties": {
+                  "uid": {
+                    "type": "integer (int64)",
+                    "description": "主播 UID。"
+                  },
+                  "uname": {
+                    "type": "string",
+                    "description": "主播昵称。"
+                  },
+                  "face": {
+                    "type": "string",
+                    "description": "主播头像 URL。"
+                  }
+                }
+              },
+              "room_id": {
+                "type": "integer (int64)",
+                "description": "直播间 ID（若有短号则为短号，否则为长号）。"
+              },
+              "medal_name": {
+                "type": "string",
+                "description": "粉丝勋章名称（若无粉丝勋章则为空字符串）。"
+              }
+            }
+          }
+        },
+        "风控及鉴权": "无"
+      },
+      {
+        "id": "get-live-room-detail",
+        "name": "直播间实时详情（轮询核心接口）",
+        "description": "获取直播间的实时详细信息，包含直播状态、在线人数、分区、标题、开播时间等。此接口为高频轮询核心数据源，在监控周期内反复调用以检测开播状态变化。",
+        "http_method": "GET",
+        "base_url": "https://api.live.bilibili.com/room/v1/Room/get_info",
+        "request_parameters": [
+          {
+            "name": "room_id",
+            "type": "integer (int64)",
+            "required": true,
+            "description": "直播间 ID，支持长短号（由 GetUserInfo 或 GetMasterInfo 获取）。"
+          }
+        ],
+        "response_schema": {
+          "code": {
+            "type": "integer",
+            "description": "API 响应状态码：0-成功，1-房间不存在。"
+          },
+          "data": {
+            "type": "object",
+            "description": "响应数据主体。",
+            "properties": {
+              "uid": {
+                "type": "integer (int64)",
+                "description": "主播 UID。"
+              },
+              "room_id": {
+                "type": "integer (int64)",
+                "description": "直播间长号。"
+              },
+              "short_id": {
+                "type": "integer (int64)",
+                "description": "直播间短号，若为 0 则无短号。"
+              },
+              "online": {
+                "type": "integer",
+                "description": "当前实时观看人数。"
+              },
+              "live_status": {
+                "type": "integer",
+                "description": "直播状态：0-未开播，1-直播中，2-轮播中。"
+              },
+              "parent_area_name": {
+                "type": "string",
+                "description": "父分区名称（如：虚拟主播、游戏）。"
+              },
+              "area_name": {
+                "type": "string",
+                "description": "子分区名称（如：虚拟日常、主机游戏）。"
+              },
+              "title": {
+                "type": "string",
+                "description": "当前直播间标题。"
+              },
+              "user_cover": {
+                "type": "string",
+                "description": "当前直播间封面图 URL。"
+              },
+              "live_time": {
+                "type": "string",
+                "description": "本次开播开始时间，格式 YYYY-MM-DD HH:mm:ss，未直播时为 0000-00-00 00:00:00。"
+              }
+            }
+          }
+        },
+        "风控及鉴权": "无"
       }
     ],
     "implementation_notes": {
-      "data_flow": "1. 初始化：调用 get-room-id-by-uid 将 UID 转换为 room_id 并缓存。2 每日调用 get-user-birthday 获取用户生日信息 3. 轮询：使用缓存的 room_id 高频调用 get-live-room-info。 4. 触发：监控 live_status 从 0 变为 1 时触发提醒，当当前系统日期与用户生日信息相同时触发特殊提醒",
-      "deserialization": "建议在 C# 中使用 System.Text.Json，并配合 JsonPropertyName 特性映射上述字段，未定义的字段将被自动忽略以优化内存。"
+      "data_flow": "1. 初始化：调用 GetUserInfo 和 GetMasterInfo，分别获取用户画像（含生日、头像、昵称、房间 ID）和粉丝勋章，缓存至内存。\n2. 轮询监控：使用缓存中的 room_id，高频调用 GetLiveRoomDetail（建议间隔：未开播时 10~15 秒，开播后 30~60 秒）。\n3. 触发条件：检测 live_status 从 0 变为 1 时触发开播提醒。\n4. 特殊提醒：当系统日期与用户生日（MM-DD）匹配时触发生日提醒。",
+      "deserialization": "建议在 C# 中使用 System.Text.Json，并配合 JsonPropertyName 特性映射上述字段，未定义的字段将被自动忽略以优化内存。",
+      "deprecated_endpoints": [
+        {
+          "id": "get-live-room-info",
+          "reason": "风控过于严格，需要有效 buvid3 且未激活的 buvid3 无法通过风控，已放弃使用。"
+        }
+      ]
     }
   }
 }

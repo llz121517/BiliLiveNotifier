@@ -27,7 +27,7 @@ class Program
         long uid = 496751305;
         ApiClient.LoadEndpoints();
 
-        var data = await ApiClient.RequestAsync("GetRoomIdByUid", uid);
+        var data = await ApiClient.RequestAsync("GetMasterInfo", uid);
         long? roomId = data?.GetPath("room_id")?.GetValue<long>();
 
         if (!roomId.HasValue)

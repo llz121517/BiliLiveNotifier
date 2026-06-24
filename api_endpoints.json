@@ -1,42 +1,48 @@
 {
-  "GetRoomIdByUid": {
-    "url": "https://api.live.bilibili.com/live_user/v1/Master/info",
-    "method": "GET",
-    "params": {
-      "uid": "{0}"
-    },
-    "responseMapping": {
-      "roomId": "room_id"
-    }
-  },
-  "GetLiveRoomInfo": {
-    "url": "https://api.live.bilibili.com/xlive/web-room/v1/index/getInfoByRoom",
-    "method": "GET",
-    "params": {
-      "room_id": "{0}"
-    },
-    "responseMapping": {
-      "uname": "anchor_info.base_info.uname",
-      "face": "anchor_info.base_info.face",
-      "medalName": "anchor_info.medal_info.medal_name",
-      "roomId": "room_info.room_id",
-      "shortId": "room_info.short_id",
-      "title": "room_info.title",
-      "cover": "room_info.cover",
-      "liveStatus": "room_info.live_status",
-      "liveStartTime": "room_info.live_start_time",
-      "parentAreaName": "room_info.parent_area_name",
-      "areaName": "room_info.area_name"
-    }
-  },
-  "GetUserBirthday": {
+  "GetUserInfo": {
     "url": "https://api.bilibili.com/x/space/acc/info",
     "method": "GET",
-    "params": {
-      "mid": "{0}"
-    },
+    "params": { "mid": "{0}" },
     "responseMapping": {
-      "birthday": "birthday"
+      "mid": "mid",
+      "name": "name",
+      "face": "face",
+      "birthday": "birthday",
+      "roomId": "live_room.roomid",
+      "liveStatus": "live_room.liveStatus",
+      "title": "live_room.title",
+      "cover": "live_room.cover",
+      "watchedNum": "live_room.watched_show.num"
+    }
+  },
+  "GetMasterInfo": {
+    "url": "https://api.live.bilibili.com/live_user/v1/Master/info",
+    "method": "GET",
+    "params": { "uid": "{0}" },
+    "responseMapping": {
+      "uid": "info.uid",
+      "uname": "info.uname",
+      "face": "info.face",
+      "roomId": "room_id",
+      "medalName": "medal_name"
+    }
+  },
+  "GetLiveRoomDetail": {
+    "url": "https://api.live.bilibili.com/room/v1/Room/get_info",
+    "method": "GET",
+    "params": { "room_id": "{0}" },
+    "requiresWbi": false,
+    "responseMapping": {
+      "uid": "uid",
+      "roomId": "room_id",
+      "shortId": "short_id",
+      "online": "online",
+      "liveStatus": "live_status",
+      "parentAreaName": "parent_area_name",
+      "areaName": "area_name",
+      "title": "title",
+      "cover": "user_cover",
+      "liveTime": "live_time"
     }
   }
 }

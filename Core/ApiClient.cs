@@ -5,7 +5,6 @@ using System.Text.Json.Serialization;
 
 namespace BiliLiveNotifier.Core;
 
-
 /// <summary>
 /// Bilibili API 通用客户端
 /// </summary>
@@ -36,8 +35,6 @@ public static class ApiClient
             throw new FileNotFoundException($"API 端点配置文件未找到: {jsonPath}");
 
         var json = File.ReadAllText(jsonPath);
-        LLog.Debug($"[Api] 配置文件原始内容: {json}");
-
         var options = new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true
@@ -46,15 +43,13 @@ public static class ApiClient
         _endpoints = JsonSerializer.Deserialize<Dictionary<string, ApiEndpointConfig>>(json, options)
             ?? throw new InvalidOperationException("API 端点配置文件内容为空");
 
-        // 打印加载的配置，重点检查 ResponseMapping 是否被正确填充
         LLog.Info($"[Api] 已加载 {_endpoints.Count} 个端点配置");
         foreach (var kv in _endpoints)
         {
-            LLog.Debug($"[Api] 端点 '{kv.Key}' -> ResponseMapping 条目数: {kv.Value.ResponseMapping.Count}");
-            foreach (var map in kv.Value.ResponseMapping)
-            {
-                LLog.Debug($"    {map.Key} -> {map.Value}");
-            }
+            LLog.Debug($"[Api] 端点 '{kv.Key}' -> 映射字段数: {kv.Value.ResponseMapping.Count}");
+            // 可选：如需查看具体映射，可取消下面注释
+            // foreach (var map in kv.Value.ResponseMapping)
+            //     LLog.Debug($"    {map.Key} -> {map.Value}");
         }
     }
 
@@ -86,41 +81,49 @@ public static class ApiClient
         }
 
         string url = $"{config.Url}?{string.Join("&", queryParams)}";
-        LLog.Debug($"[Api] 发起请求 [{endpointName}] {url}");
+        LLog.Debug($"[Api] 请求 [{endpointName}] -> {url}");
 
         for (int attempt = 0; attempt <= 20; attempt++)
         {
             try
             {
                 var rawJson = await _http.GetStringAsync(url);
-                LLog.Debug($"[Api] [{endpointName}] 原始响应: {rawJson}");
-
                 var response = JsonSerializer.Deserialize<ApiModels<JsonObject>>(rawJson);
-                if (response == null) continue;
-                if (response.Code == 0 && response.Data != null)
+                if (response == null)
                 {
-                    LLog.Debug($"[Api] [{endpointName}] 成功获取 data 节点，内容: {response.Data.ToJsonString()}");
-                    return response.Data;
-                }
-                if (response.Code == -799)
-                {
-                    LLog.Debug($"[Api] [{endpointName}] 触发风控(-799), 准备重试...");
+                    LLog.Warn($"[Api] [{endpointName}] 响应反序列化为 null");
                     continue;
                 }
 
-                LLog.Warn($"[Api] [{endpointName}] 业务错误, 错误码: {response.Code}, 信息: {response.Message}");
+                if (response.Code == 0 && response.Data != null)
+                {
+                    LLog.Debug($"[Api] [{endpointName}] 请求成功 (code=0)");
+                    return response.Data;
+                }
+
+                if (response.Code == -799)
+                {
+                    LLog.Debug($"[Api] [{endpointName}] 触发风控 -799，重试中...");
+                    continue;
+                }
+
+                LLog.Warn($"[Api] [{endpointName}] 业务错误: code={response.Code}, msg={response.Message}");
                 return null;
             }
             catch (OperationCanceledException) { throw; }
             catch (Exception ex)
             {
-                if (attempt > 0 || attempt == 20)
-                    LLog.Debug($"[Api] [{endpointName}] 第 {attempt + 1}/21 次请求异常: {ex.Message}");
-                continue;
+                if (attempt == 0)
+                    LLog.Debug($"[Api] [{endpointName}] 首次请求异常: {ex.Message}");
+                else if (attempt == 20)
+                    LLog.Debug($"[Api] [{endpointName}] 重试耗尽: {ex.Message}");
+                else
+                    LLog.Debug($"[Api] [{endpointName}] 第 {attempt + 1} 次重试异常: {ex.Message}");
+                // 继续重试
             }
         }
 
-        LLog.Error($"[Api] [{endpointName}] 重试次数已耗尽");
+        LLog.Error($"[Api] [{endpointName}] 重试次数已耗尽，请求失败");
         return null;
     }
 
@@ -147,16 +150,18 @@ public static class ApiClient
         if (!_endpoints.TryGetValue(endpointName, out var config))
             throw new ArgumentException($"未知的 API 端点: '{endpointName}'");
 
-        LLog.Debug($"[Api] MapResponse 开始，端点: {endpointName}");
-        LLog.Debug($"[Api] 数据节点内容: {data.ToJsonString()}");
+        LLog.Debug($"[Api] 开始映射响应数据 [{endpointName}] (共 {config.ResponseMapping.Count} 个字段)");
 
         var result = new Dictionary<string, object?>();
         foreach (var kv in config.ResponseMapping)
         {
-            LLog.Debug($"[Api] 尝试提取映射: {kv.Key} -> 路径 '{kv.Value}'");
             var node = GetPathNode(data, kv.Value);
             var value = ConvertJsonNodeToValue(node);
-            LLog.Debug($"[Api] 提取结果: {(value == null ? "<null>" : value.ToString())}");
+            if (value == null)
+            {
+                // 只在字段为 null 时记录调试信息，便于发现路径错误
+                LLog.Debug($"[Api] 字段 '{kv.Key}' -> 路径 '{kv.Value}' 未找到或为 null");
+            }
             result[kv.Key] = value;
         }
         return result;
@@ -190,16 +195,15 @@ public static class ApiClient
             return kind switch
             {
                 JsonValueKind.String => value.GetValue<string>(),
-                JsonValueKind.Number => value.GetValue<long>(), // 如果数字可能是浮点数，可改用 decimal 或 double
+                JsonValueKind.Number => value.GetValue<long>(),
                 JsonValueKind.True => true,
                 JsonValueKind.False => false,
                 JsonValueKind.Null => null,
-                JsonValueKind.Object => value, // 保留为 JsonNode
+                JsonValueKind.Object => value,
                 JsonValueKind.Array => value,
-                _ => value.GetValue<object>() // fallback
+                _ => value.GetValue<object>()
             };
         }
-        // 非 JsonValue 如 JsonObject/JsonArray 直接返回 node
         return node;
     }
 }
