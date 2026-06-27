@@ -47,7 +47,7 @@ public static class ApiClient
         foreach (var kv in _endpoints)
         {
             LLog.Debug($"[Api] 端点 '{kv.Key}' -> 映射字段数: {kv.Value.ResponseMapping.Count}");
-            // 可选：如需查看具体映射，可取消下面注释
+            // 如需查看具体映射，可取消下面注释
             // foreach (var map in kv.Value.ResponseMapping)
             //     LLog.Debug($"    {map.Key} -> {map.Value}");
         }

@@ -38,21 +38,16 @@ class Program
 
         LLog.Info($"[Init] UID:{uid} 解析到直播间ID: {roomId}");
 
+        // 业务层负责协调，Notifier 只接收 Uri
+        var avatarUri = await ToastImageCache.GetLocalUriAsync("https://i1.hdslb.com/bfs/face/4c6e413e3789ef1bfaa738b05db977f4d7129858.jpg");
+        var coverUri = await ToastImageCache.GetLocalUriAsync("https://i0.hdslb.com/bfs/live/new_room_cover/d57ca8a633b288333c1f0bb260a55ea46dca882b.jpg");
+
         // 2. 使用真实房间号拼接 URL 并发送中文通知
         string liveUrl = $"https://live.bilibili.com/{roomId}";
 
-        ToastNotifier.SendLiveNotification(
-            headerId: TestHeaderId,
-            headerTitle: TestHeaderTitle,
-            title: "测试主播已开播!",
-            subtitle: "点击按钮前往直播间",
-            url: liveUrl
-        );
+        await ToastNotifier.SendLiveNotificationAsync("headerTitle", "title", "subtitle", coverUri, avatarUri, liveUrl);
 
         await Task.Delay(3000);
-        // 业务层负责协调，ToastDemo 只接收 Uri
-        var avatarUri = await ToastImageCache.GetLocalUriAsync("https://i1.hdslb.com/bfs/face/4c6e413e3789ef1bfaa738b05db977f4d7129858.jpg");
-        var coverUri = await ToastImageCache.GetLocalUriAsync("https://i0.hdslb.com/bfs/live/new_room_cover/d57ca8a633b288333c1f0bb260a55ea46dca882b.jpg");
 
         // 传入已解析的本地 URI，ToastDemo 不感知网络/缓存
         ToastDemo.ShowMinimal();
