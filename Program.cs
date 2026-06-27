@@ -4,10 +4,6 @@ namespace BiliLiveNotifier;
 
 class Program
 {
-    // 测试阶段的临时默认值，仅存在于入口处
-    private const string TestHeaderId = "bili-live";
-    private const string TestHeaderTitle = "BiliLiveNotifier";
-
     static async Task Main(string[] args)
     {
         LLog.Level = LLog.LogLevel.Debug;
@@ -48,15 +44,6 @@ class Program
         await ToastNotifier.SendLiveNotificationAsync("headerTitle", "title", "subtitle", coverUri, avatarUri, liveUrl);
 
         await Task.Delay(3000);
-
-        // 传入已解析的本地 URI，ToastDemo 不感知网络/缓存
-        ToastDemo.ShowMinimal();
-        await Task.Delay(2000);
-        ToastDemo.ShowWithAvatarAndTag(avatarUri);
-        await Task.Delay(2000);
-        ToastDemo.ShowWithCoverAndAvatar(coverUri, avatarUri);
-        await Task.Delay(2000);
-        ToastDemo.ShowWithDualButtons(avatarUri);
 
         ToastImageCache.ClearCache();
 

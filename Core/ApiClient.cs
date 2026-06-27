@@ -2,6 +2,9 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
+using System.Runtime.CompilerServices;
+
+[assembly: InternalsVisibleTo("BiliLiveNotifier.Tests")]
 
 namespace BiliLiveNotifier.Core;
 
@@ -13,7 +16,19 @@ public static class ApiClient
     private static readonly HttpClient _http;
     private static Dictionary<string, ApiEndpointConfig>? _endpoints;
 
-    static ApiClient()
+    internal static HttpClient TestHttpClient
+    {
+        set => typeof(ApiClient)
+            .GetField("_http", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)!
+            .SetValue(null, value);
+    }
+
+    internal static void ResetHttpClient()
+    {
+        TestHttpClient = CreateDefaultHttpClient();
+    }
+
+    private static HttpClient CreateDefaultHttpClient()
     {
         var handler = new SocketsHttpHandler
         {
@@ -21,9 +36,15 @@ public static class ApiClient
             AutomaticDecompression = DecompressionMethods.All
         };
 
-        _http = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(10) };
-        _http.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36");
-        _http.DefaultRequestHeaders.Add("Referer", "https://space.bilibili.com/");
+        var client = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(10) };
+        client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36");
+        client.DefaultRequestHeaders.Add("Referer", "https://space.bilibili.com/");
+        return client;
+    }
+
+    static ApiClient()
+    {
+        _http = CreateDefaultHttpClient();
     }
 
     /// <summary>

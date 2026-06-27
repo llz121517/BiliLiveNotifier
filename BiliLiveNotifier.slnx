@@ -1,3 +1,4 @@
 <Solution>
   <Project Path="BiliLiveNotifier.csproj" />
+  <Project Path="Tests\BiliLiveNotifier.Tests.csproj" />
 </Solution>

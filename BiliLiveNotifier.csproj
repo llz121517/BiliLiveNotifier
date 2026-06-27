@@ -5,6 +5,7 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<UseWindowsForms>true</UseWindowsForms>
+		<DefaultItemExcludes>$(DefaultItemExcludes);Tests\**\*</DefaultItemExcludes>
 	</PropertyGroup>
 
 	<ItemGroup>
