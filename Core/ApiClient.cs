@@ -13,14 +13,12 @@ namespace BiliLiveNotifier.Core;
 /// </summary>
 public static class ApiClient
 {
-    private static readonly HttpClient _http;
+    private static HttpClient _http = null!;
     private static Dictionary<string, ApiEndpointConfig>? _endpoints;
 
     internal static HttpClient TestHttpClient
     {
-        set => typeof(ApiClient)
-            .GetField("_http", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)!
-            .SetValue(null, value);
+        set => _http = value ?? throw new ArgumentNullException(nameof(value));
     }
 
     internal static void ResetHttpClient()
