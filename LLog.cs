@@ -41,12 +41,12 @@ public static class LLog
     private static readonly object _lock = new();
     private static DateTime _lastCleanupDate = DateTime.MinValue;
 
-    private static void Write(LogLevel lv, string tag, string msg)
+    private static void Write(LogLevel lv, string tag, string msg, bool raw = false)
     {
         if (Level > lv) return;
 
         var now = DateTime.Now;
-        var line = $"[{now:yyyy-MM-dd HH:mm:ss}] [{tag}] {msg}";
+        var line = raw ? msg : $"[{now:yyyy-MM-dd HH:mm:ss}] [{tag}] {msg}";
 
         lock (_lock)
         {
@@ -108,4 +108,5 @@ public static class LLog
     public static void Info(string msg)  => Write(LogLevel.Info,  "INFO",  msg);
     public static void Warn(string msg)  => Write(LogLevel.Warn,  "WARN",  msg);
     public static void Error(string msg) => Write(LogLevel.Error, "ERROR", msg);
+    public static void Enter() => Write(LogLevel.Info, "", "", raw: true);
 }

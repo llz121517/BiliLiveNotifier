@@ -17,8 +17,8 @@ class Program
     static async Task Main(string[] args)
     {
         LLog.Level = LLog.LogLevel.Debug;
-        LLog.Info(new string('=', 20));
-        LLog.Info("[Main] BiliLiveNotifier 开始运行\n");
+        LLog.Enter();
+        LLog.Info("===== BiliLiveNotifier v0.1.0-Dev Started =====");
 
         ToastNotifier.InitListener();
 
@@ -43,6 +43,8 @@ class Program
         FilterBirthday = cfg?["skip_default_birthday"]?.GetValue<bool>() ?? true;
         bool autoStart = cfg?["auto_start"]?.GetValue<bool>() ?? false;
 
+        LLog.Info("[Main] 初始化完成\n");
+
         await Program.MonitorService(uids[0]);
 
         ToastImageCache.ClearCache();
@@ -65,6 +67,14 @@ class Program
             var userInfo = await ApiClient.RequestMappedAsync("GetUserInfo", uid);
             string? birthday = userInfo?.GetValueOrDefault("birthday")?.ToString();
 
+            // 如果配置了过滤默认生日，并且生日是 "01-01"，则直接跳过
+            if (FilterBirthday && birthday == "01-01")
+            {
+                LLog.Info($"[CheckBirthday] UID={uid} 生日={birthday}, 过滤配置={FilterBirthday}, 跳过");
+                _lastBirthdayCheckDate = today;
+                return;
+            }
+
             bool isMatch = !string.IsNullOrEmpty(birthday) &&
                            (birthday.Equals(today, StringComparison.OrdinalIgnoreCase) ||
                             birthday.EndsWith(today, StringComparison.OrdinalIgnoreCase));
@@ -72,7 +82,7 @@ class Program
             _isBirthday = isMatch;
             _lastBirthdayCheckDate = today;
 
-            LLog.Info($"[CheckBirthday] UID:{uid} 生日={birthday}, 今日={today}, 匹配={_isBirthday}");
+            LLog.Info($"[CheckBirthday] UID={uid} 生日={birthday}, 今日={today}, 匹配={_isBirthday}");
         }
         catch (Exception ex)
         {
@@ -87,11 +97,11 @@ class Program
 
         if (!roomId.HasValue)
         {
-            LLog.Warn($"[MonitorService] UID:{Uid} 解析直播间ID失败, 跳过通知发送");
+            LLog.Warn($"[MonitorService] UID={Uid} 解析直播间ID失败, 跳过通知发送");
             return;
         }
 
-        LLog.Info($"[MonitorService] UID:{Uid} 解析到直播间ID: {roomId}");
+        LLog.Info($"[MonitorService] UID={Uid} 解析到直播间ID: {roomId}");
 
         ConfigManager.OnConfigReloaded += newConfig =>
         {
