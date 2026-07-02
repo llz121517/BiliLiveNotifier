@@ -17,9 +17,13 @@ public static class ConfigManager
 
     private static readonly string DefaultJson = JsonSerializer.Serialize(new
     {
-        uids = new[] { 496751305 },
+        uids = new[] { 6 },
         auto_start = false,
-        check_interval = 15
+        check_interval = 15,
+        live_check_interval = 45,
+        birthday_text = true,
+        skip_default_birthday = true
+
     }, new JsonSerializerOptions { WriteIndented = true });
 
     private static FileSystemWatcher? _watcher;
@@ -42,7 +46,7 @@ public static class ConfigManager
         Directory.CreateDirectory(Path.Combine(AppContext.BaseDirectory, ConfigDir));
         LoadFromDisk();
         StartWatching();
-        LLog.Info($"[Config] 初始化完成, 路径: {ConfigFilePath}");
+        LLog.Debug($"[Config] 初始化完成, 路径: {ConfigFilePath}");
     }
 
     /// <summary>停止文件监视</summary>
@@ -89,7 +93,7 @@ public static class ConfigManager
             }
 
             _config = parsed;
-            LLog.Debug($"[Config] 加载成功");
+            LLog.Info($"[Config] 配置加载成功");
         }
         catch (JsonException ex)
         {

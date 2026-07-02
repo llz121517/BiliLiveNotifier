@@ -102,7 +102,7 @@ public static class ApiClient
         string url = $"{config.Url}?{string.Join("&", queryParams)}";
         LLog.Debug($"[Api] 请求 [{endpointName}] -> {url}");
 
-        for (int attempt = 0; attempt <= 20; attempt++)
+        for (int attempt = 0; attempt <= 14; attempt++)
         {
             try
             {
@@ -122,7 +122,8 @@ public static class ApiClient
 
                 if (response.Code == -799)
                 {
-                    LLog.Debug($"[Api] [{endpointName}] 触发风控 -799，重试中...");
+                    LLog.Debug($"[Api] [{endpointName}] 触发风控 -799，300ms 后重试...");
+                    await Task.Delay(300);
                     continue;
                 }
 
