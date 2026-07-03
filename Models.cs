@@ -49,3 +49,36 @@ public static class JsonNodeExtensions
         return node;
     }
 }
+
+/// <summary>
+/// 应用程序强类型配置模型
+/// </summary>
+public class NotifierConfig
+{
+    public long[] Uids { get; set; } = [];
+    public int CheckInterval { get; set; } = 15;
+    public int LiveCheckInterval { get; set; } = 45;
+    public bool BirthdayText { get; set; } = true;
+    public bool FilterBirthday { get; set; } = true;
+    public bool AutoStart { get; set; } = false;
+
+    /// <summary>
+    /// 从 JsonNode 解析为强类型配置
+    /// </summary>
+    public static NotifierConfig FromJsonNode(JsonNode? node)
+    {
+        if (node is null) return new NotifierConfig();
+
+        return new NotifierConfig
+        {
+            Uids = node["uids"]?.AsArray()
+                ?.Select(v => v is not null ? (long)v : 0L)
+                .ToArray() ?? [],
+            CheckInterval = node["check_interval"]?.GetValue<int>() ?? 15,
+            LiveCheckInterval = node["live_check_interval"]?.GetValue<int>() ?? 45,
+            BirthdayText = node["birthday_text"]?.GetValue<bool>() ?? true,
+            FilterBirthday = node["skip_default_birthday"]?.GetValue<bool>() ?? true,
+            AutoStart = node["auto_start"]?.GetValue<bool>() ?? false,
+        };
+    }
+}
