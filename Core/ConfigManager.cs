@@ -19,8 +19,8 @@ public static class ConfigManager
     {
         uids = new[] { 6 },
         auto_start = false,
-        check_interval = 15,
-        live_check_interval = 45,
+        check_interval = 30,
+        live_check_interval = 60,
         birthday_text = true,
         skip_default_birthday = true
 

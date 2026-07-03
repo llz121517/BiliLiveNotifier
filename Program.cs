@@ -7,7 +7,7 @@ class Program
     static async Task Main(string[] args)
     {
         LLog.Level = LLog.LogLevel.Debug;
-        LLog.Line();
+        LLog.Raw();
         LLog.Info("===== BiliLiveNotifier v0.1.0-Dev Started =====");
 
         ToastNotifier.InitListener();

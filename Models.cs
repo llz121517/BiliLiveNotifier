@@ -56,8 +56,8 @@ public static class JsonNodeExtensions
 public class NotifierConfig
 {
     public long[] Uids { get; set; } = [];
-    public int CheckInterval { get; set; } = 15;
-    public int LiveCheckInterval { get; set; } = 45;
+    public int CheckInterval { get; set; } = 30;
+    public int LiveCheckInterval { get; set; } = 60;
     public bool BirthdayText { get; set; } = true;
     public bool FilterBirthday { get; set; } = true;
     public bool AutoStart { get; set; } = false;
@@ -74,8 +74,8 @@ public class NotifierConfig
             Uids = node["uids"]?.AsArray()
                 ?.Select(v => v is not null ? (long)v : 0L)
                 .ToArray() ?? [],
-            CheckInterval = node["check_interval"]?.GetValue<int>() ?? 15,
-            LiveCheckInterval = node["live_check_interval"]?.GetValue<int>() ?? 45,
+            CheckInterval = node["check_interval"]?.GetValue<int>() ?? 30,
+            LiveCheckInterval = node["live_check_interval"]?.GetValue<int>() ?? 60,
             BirthdayText = node["birthday_text"]?.GetValue<bool>() ?? true,
             FilterBirthday = node["skip_default_birthday"]?.GetValue<bool>() ?? true,
             AutoStart = node["auto_start"]?.GetValue<bool>() ?? false,

@@ -108,5 +108,5 @@ public static class LLog
     public static void Info(string msg)  => Write(LogLevel.Info,  "INFO",  msg);
     public static void Warn(string msg)  => Write(LogLevel.Warn,  "WARN",  msg);
     public static void Error(string msg) => Write(LogLevel.Error, "ERROR", msg);
-    public static void Line() => Write(LogLevel.Info, "", "", raw: true);
+    public static void Raw(string msg = "") => Write(LogLevel.Info, "", msg, raw: true);
 }

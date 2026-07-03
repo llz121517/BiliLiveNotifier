@@ -135,7 +135,7 @@ public static class ApiClient
             {
                 if (attempt == 0)
                     LLog.Debug($"[Api] [{endpointName}] 首次请求异常: {ex.Message}");
-                else if (attempt == 20)
+                else if (attempt == 15)
                     LLog.Debug($"[Api] [{endpointName}] 重试耗尽: {ex.Message}");
                 else
                     LLog.Debug($"[Api] [{endpointName}] 第 {attempt + 1} 次重试异常: {ex.Message}");
