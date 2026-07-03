@@ -25,40 +25,41 @@ class Program
         ApiClient.LoadEndpoints();
 
         var config = NotifierConfig.FromJsonNode(ConfigManager.Config);
-        var appCtx = new LiveEnvironment(config);
+        var liveEnv = new LiveEnvironment(config);
 
         LLog.Info($"[Main] 初始化完成, 监控 {config.Uids.Length} 个主播\n");
 
-        // 2. 配置热重载 → ReBoot
-        ConfigManager.OnConfigReloaded += _ =>
+        // 2. 配置热重载 → 差量更新监控实例
+        ConfigManager.OnConfigReloaded += async _ =>
         {
-            LLog.Info("[Reload] 检测到配置变更，准备热重载...");
-            string? exePath = Environment.ProcessPath;
-            LLog.Debug($"[Reload] 正在 Restart: {exePath}");
-
-            try
-            {
-                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-                {
-                    FileName = exePath,
-                    UseShellExecute = false,
-                    WorkingDirectory = Path.GetDirectoryName(exePath)
-                });
-                Environment.Exit(0);
-            }
-            catch (Exception ex)
-            {
-                LLog.Error($"[Reload] 启动新进程失败: {ex.Message}");
-            }
+            LLog.Info("[Reload] 检测到配置变更");
+            await liveEnv.ReloadAsync();
         };
 
-        // 3. 创建并启动所有监控实例
-        var monitors = config.Uids
-            .Select(uid => new LiveMonitor(uid, appCtx))
-            .ToArray();
+        // 3. 启动所有监控
+        await liveEnv.StartAllAsync();
 
-        await Task.WhenAll(monitors.Select(m => m.StartAsync()));
+        // 4. 保持运行，直到 Ctrl+C
+        var exitCts = new CancellationTokenSource();
+        Console.CancelKeyPress += (_, e) =>
+        {
+            e.Cancel = true;
+            exitCts.Cancel();
+        };
 
+        try
+        {
+            await Task.Delay(Timeout.Infinite, exitCts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            // Ctrl+C 触发
+        }
+
+        // 5. 优雅退出
+        LLog.Info("[Main] 正在停止所有监控...");
+        await liveEnv.StopAllAsync();
         ToastImageCache.ClearCache();
+        LLog.Info("[Main] 已退出");
     }
 }

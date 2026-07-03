@@ -4,11 +4,14 @@ using System.Text.Json.Nodes;
 namespace BiliLiveNotifier;
 
 /// <summary>
-/// 全局应用上下文，持有共享依赖
+/// 全局应用上下文，持有共享依赖并管理所有监控实例的生命周期
 /// </summary>
 public class LiveEnvironment
 {
-    public NotifierConfig Config { get; set; }
+    public NotifierConfig Config { get; private set; }
+
+    // uid → (监控实例, 运行任务)
+    private readonly Dictionary<long, (LiveMonitor Monitor, Task Task)> _monitors = new();
 
     public LiveEnvironment(NotifierConfig config)
     {
@@ -16,11 +19,71 @@ public class LiveEnvironment
     }
 
     /// <summary>
-    /// 从 ConfigManager 重新加载配置
+    /// 启动所有配置中的 UID 监控
     /// </summary>
-    public void ReloadConfig()
+    public Task StartAllAsync()
     {
-        Config = NotifierConfig.FromJsonNode(ConfigManager.Config);
+        foreach (var uid in Config.Uids)
+        {
+            StartMonitor(uid);
+        }
+        LLog.Info($"[Env] 已启动 {_monitors.Count} 个监控实例");
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// 优雅关闭所有监控
+    /// </summary>
+    public async Task StopAllAsync()
+    {
+        foreach (var (monitor, _) in _monitors.Values)
+            monitor.Stop();
+
+        await Task.WhenAll(_monitors.Values.Select(v => v.Task));
+        _monitors.Clear();
+        LLog.Info("[Env] 所有监控实例已停止");
+    }
+
+    /// <summary>
+    /// 配置热重载：根据 UID 差量增删监控实例，其它配置自动生效
+    /// </summary>
+    public async Task ReloadAsync()
+    {
+        var newConfig = NotifierConfig.FromJsonNode(ConfigManager.Config);
+        var oldUids = _monitors.Keys.ToHashSet();
+        var newUids = newConfig.Uids.ToHashSet();
+
+        // ① 要移除的：在旧不在新 → Stop
+        var toRemove = oldUids.Except(newUids).ToList();
+        foreach (var uid in toRemove)
+        {
+            LLog.Info($"[Reload] 停止监控: {uid}");
+            _monitors[uid].Monitor.Stop();
+            await _monitors[uid].Task;
+            _monitors.Remove(uid);
+        }
+
+        // ② 要新增的：在新不在旧 → New + Start
+        var toAdd = newUids.Except(oldUids).ToList();
+        foreach (var uid in toAdd)
+        {
+            LLog.Info($"[Reload] 新增监控: {uid}");
+            StartMonitor(uid);
+        }
+
+        // ③ 更新配置引用（其它配置项如 CheckInterval 会被 LiveMonitor 自动读取）
+        Config = newConfig;
+
+        LLog.Info($"[Reload] 完成: 移除 {toRemove.Count}, 新增 {toAdd.Count}, 当前 {_monitors.Count} 个监控");
+    }
+
+    // ---- 私有方法 ----
+
+    private void StartMonitor(long uid)
+    {
+        var monitor = new LiveMonitor(uid, this);
+        var task = Task.Run(() => monitor.StartAsync());
+        _monitors[uid] = (monitor, task);
     }
 }
 
@@ -63,7 +126,7 @@ public class LiveMonitor
     public async Task StartAsync()
     {
         var masterData = await ApiClient.RequestMappedAsync("GetMasterInfo", _uid);
-        _roomId = masterData?["roomId"] is not null ? (long?)masterData["roomId"] : null;
+        _roomId = masterData?.GetValueOrDefault("roomId") as long?;
 
         if (!_roomId.HasValue)
         {
@@ -83,8 +146,10 @@ public class LiveMonitor
         }
         catch (OperationCanceledException)
         {
-            LLog.Info($"[Monitor:{_uid}] 已停止");
+            // 正常停止，无需处理
         }
+
+        LLog.Info($"[Monitor:{_uid}] 已停止");
     }
 
     /// <summary>
@@ -105,7 +170,7 @@ public class LiveMonitor
         await CheckBirthdayAsync();
 
         var data = await ApiClient.RequestMappedAsync("GetLiveRoomDetail", _roomId);
-        long? liveStatus = data?["liveStatus"] is not null ? (long?)data["liveStatus"] : null;
+        long? liveStatus = data?.GetValueOrDefault("liveStatus") as long?;
 
         if ((liveStatus == 1 || liveStatus == 2) && !_isToast)
         {
