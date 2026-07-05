@@ -21,14 +21,14 @@ public class LiveEnvironment
     /// <summary>
     /// 启动所有配置中的 UID 监控
     /// </summary>
-    public Task StartAllAsync()
+    public async Task StartAllAsync()
     {
         foreach (var uid in Config.Uids)
         {
             StartMonitor(uid);
+            await Task.Delay(1000); // 避免同时请求过快
         }
         LLog.Info($"[Env] 已启动 {_monitors.Count} 个监控实例");
-        return Task.CompletedTask;
     }
 
     /// <summary>
@@ -211,7 +211,7 @@ public class LiveMonitor
         if (face != null && cover != null)
         {
             avatarUri = await ToastImageCache.GetLocalUriAsync(face);
-            coverUri = await ToastImageCache.GetLocalUriAsync(cover);
+            coverUri = await ToastImageCache.GetHeroUriAsync(cover);
         }
 
         // -- 构建标题 --

@@ -78,6 +78,48 @@ public static class ToastImageCache
     }
 
     /// <summary>
+    /// 获取图片的 2:1 Hero 版本地缓存 URI
+    /// 在原始缓存基础上做两侧模糊渐变扩展，以 hero_ 前缀独立缓存
+    /// </summary>
+    public static async Task<Uri?> GetHeroUriAsync(string remoteUrl)
+    {
+        // 1. 先取原图缓存
+        var rawUri = await GetLocalUriAsync(remoteUrl);
+        if (rawUri == null || !rawUri.IsFile)
+            return null;
+
+        string rawPath = rawUri.LocalPath;
+        string dir = Path.GetDirectoryName(rawPath)!;
+        string sha1 = Path.GetFileNameWithoutExtension(rawPath);
+        string ext = Path.GetExtension(rawPath);
+        string heroFileName = $"hero_{sha1}{ext}";
+        string heroPath = Path.Combine(dir, heroFileName);
+
+        // 2. 已缓存 → 直接返回
+        if (File.Exists(heroPath))
+        {
+            LLog.Debug($"[ToastImageCache] 命中 Hero 缓存: {heroFileName}");
+            return new Uri(heroPath);
+        }
+
+        // 3. 处理并原子写入（temp 文件带扩展名，供 ImageSharp 识别编码器）
+        string tempPath = Path.Combine(dir, $"hero_{sha1}_tmp{ext}");
+        try
+        {
+            ImageProcessor.ExpandToHeroRatio(rawPath, tempPath);
+            File.Move(tempPath, heroPath, overwrite: true);
+            LLog.Debug($"[ToastImageCache] Hero 处理完成: {heroFileName}");
+            return new Uri(heroPath);
+        }
+        catch (Exception ex)
+        {
+            LLog.Error($"[ToastImageCache] Hero 处理失败: {ex.Message}");
+            // 降级返回原图 URI
+            return rawUri;
+        }
+    }
+
+    /// <summary>
     /// 清理缓存目录下的所有图片文件
     /// 仅删除 _cacheDirectory 根目录下的匹配文件，不遍历子文件夹
     /// </summary>

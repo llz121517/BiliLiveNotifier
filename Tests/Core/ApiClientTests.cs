@@ -5,7 +5,7 @@ public class ApiClientTests : IDisposable
     public ApiClientTests()
     {
         // 每个测试前重置端点配置（确保测试隔离）
-        ApiClient.LoadEndpoints(Path.Combine(LiveEnvironment.BaseDirectory, "api_endpoints.json"));
+        ApiClient.LoadEndpoints(Path.Combine(AppContext.BaseDirectory, "api_endpoints.json"));
     }
 
     public void Dispose()
