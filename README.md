@@ -111,37 +111,10 @@ BiliLiveNotifier/
 
 ---
 
-## 架构概览
-
-```
-┌─────────────┐      ┌──────────────────────────────────┐
-│  Program.cs  │ ──→  │       LiveEnvironment            │
-│  (入口点)    │      │  ├─ Config (NotifierConfig)      │
-└─────────────┘      │  └─ Dictionary<uid, LiveMonitor>  │
-       │             └──────────┬───────────────────────┘
-       │                        │ StartAllAsync()
-       ▼                        ▼
-┌──────────────┐     ┌─────────────────────┐
-│ ConfigManager │ ←──│    LiveMonitor x N   │  ← 每个 UID 一个独立 Task
-│ (热重载)      │     │                     │
-└──────────────┘     │ while 循环:          │
-                     │   ├─ CheckBirthday() │
-┌──────────────┐     │   └─ GetLiveRoomDetail
-│  ApiClient   │ ←── │        ├─ live → HandleGoLive()
-│ (B站 API)    │     │        └─ dead → HandleGoOffline()
-└──────────────┘     └─────────┬───────────┘
-                               │
-          ┌────────────────────┼────────────────────┐
-          ▼                    ▼                    ▼
-   ┌─────────────┐    ┌───────────────┐    ┌──────────────┐
-   │ ToastImage  │    │ ToastNotifier │    │    LLog      │
-   │ Cache (缓存) │    │ (Toast 通知)   │    │  (日志系统)   │
-   └─────────────┘    └───────────────┘    └──────────────┘
-```
-
----
 
 ## Toast 通知样式
+
+<img src="img1.png" alt="示例" align="left" width="270">
 
 开播通知包含：
 - 📌 分组标题：`BiliLiveNotifier`
@@ -151,6 +124,8 @@ BiliLiveNotifier/
 - 📄 副标题：直播间标题 + 开播时间 + 观看人数
 - 🏷️ 归属文本：分区信息
 - 🔘 按钮：「进入直播间」
+
+<br clear="all">
 
 ---
 
