@@ -22,7 +22,8 @@ public static class ConfigManager
         check_interval = 30,
         live_check_interval = 60,
         birthday_text = true,
-        skip_default_birthday = true
+        skip_default_birthday = true,
+        birthday_check_on_live_only = true
 
     }, new JsonSerializerOptions { WriteIndented = true });
 

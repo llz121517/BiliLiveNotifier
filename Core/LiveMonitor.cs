@@ -174,7 +174,7 @@ public class LiveMonitor
         var data = await ApiClient.RequestMappedAsync("GetLiveRoomDetail", _roomId);
         long? liveStatus = data?.GetValueOrDefault("liveStatus") as long?;
 
-        if ((liveStatus == 1 || liveStatus == 2) && !_isToast)
+        if ((liveStatus == 1 || (liveStatus == 2 && _ctx.Config.NotifyOnCarousel)) && !_isToast)
         {
             await HandleGoLiveAsync(data);
         }
