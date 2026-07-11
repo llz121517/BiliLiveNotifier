@@ -69,6 +69,24 @@ public static class ConfigManager
         LoadFromDisk();
     }
 
+    /// <summary>
+    /// 原子化修改配置并持久化：执行 patch 回调 → 写磁盘 → 立即触发 OnConfigReloaded。
+    /// GUI 增删 UID、改间隔、切开关等都走这个方法。
+    /// </summary>
+    public static void Patch(Action<JsonObject> patch)
+    {
+        lock (_lock)
+        {
+            if (_config == null) return;
+            patch(_config);
+            var json = _config.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(ConfigFilePath, json);
+        }
+        // 立即通知（文件监视器去抖后也会再触发一次，无副作用）
+        if (_config != null)
+            OnConfigReloaded?.Invoke(_config);
+    }
+
     // ===================== 内部 =====================
 
     private static void LoadFromDisk()

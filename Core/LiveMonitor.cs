@@ -6,7 +6,7 @@ namespace BiliLiveNotifier;
 /// <summary>
 /// 全局应用上下文，持有共享依赖并管理所有监控实例的生命周期
 /// </summary>
-public class LiveEnvironment
+public class LiveEnvironment : IDisposable
 {
     public NotifierConfig Config { get; private set; }
 
@@ -26,7 +26,7 @@ public class LiveEnvironment
         foreach (var uid in Config.Uids)
         {
             StartMonitor(uid);
-            await Task.Delay(1000); // 避免同时请求过快
+            await Task.Delay(2000); // 避免同时请求过快
         }
         LLog.Info($"[Env] 已启动 {_monitors.Count} 个监控实例");
     }
@@ -77,13 +77,41 @@ public class LiveEnvironment
         LLog.Info($"[Reload] 完成: 移除 {toRemove.Count}, 新增 {toAdd.Count}, 当前 {_monitors.Count} 个监控");
     }
 
-    // ---- 私有方法 ----
+    // ---- 公共监控管理 API ----
 
-    private void StartMonitor(long uid)
+    /// <summary>启动对指定 UID 的监控</summary>
+    public void StartMonitor(long uid)
     {
         var monitor = new LiveMonitor(uid, this);
         var task = Task.Run(() => monitor.StartAsync());
         _monitors[uid] = (monitor, task);
+    }
+
+    /// <summary>停止对指定 UID 的监控，等待任务结束</summary>
+    public async Task StopMonitorAsync(long uid)
+    {
+        if (!_monitors.TryGetValue(uid, out var entry)) return;
+
+        entry.Monitor.Stop();
+        await entry.Task;
+        entry.Monitor.Dispose();
+        _monitors.Remove(uid);
+        LLog.Info($"[Env] 已停止监控: {uid}");
+    }
+
+    /// <summary>所有正在监控的实例（只读快照）</summary>
+    public IReadOnlyCollection<LiveMonitor> Monitors =>
+        _monitors.Values.Select(v => v.Monitor).ToList().AsReadOnly();
+
+    /// <summary>释放所有监控资源</summary>
+    public void Dispose()
+    {
+        foreach (var (monitor, _) in _monitors.Values)
+        {
+            monitor.Stop();
+            monitor.Dispose();
+        }
+        _monitors.Clear();
     }
 }
 
@@ -113,6 +141,11 @@ public class LiveMonitor
 
     public long Uid => _uid;
     public bool IsRunning => !_cts.IsCancellationRequested;
+    public long RoomId => _roomId ?? 0;
+    public bool IsLive => _isToast;
+    public string? MedalName => _medalName;
+    public string? LiveTitle => _title;
+    public string? LiveTime => _time;
 
     public LiveMonitor(long uid, LiveEnvironment ctx)
     {
@@ -158,6 +191,14 @@ public class LiveMonitor
     public void Stop()
     {
         _cts.Cancel();
+    }
+
+    /// <summary>
+    /// 释放资源（CancellationTokenSource）
+    /// </summary>
+    public void Dispose()
+    {
+        _cts.Dispose();
     }
 
     // ==================== 私有方法 ====================
