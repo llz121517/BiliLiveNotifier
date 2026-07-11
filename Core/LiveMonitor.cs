@@ -167,7 +167,9 @@ public class LiveMonitor
     /// </summary>
     private async Task TickAsync()
     {
-        await CheckBirthdayAsync();
+        // 旧模式：每日轮询时独立检查生日
+        if (!_ctx.Config.BirthdayCheckOnLiveOnly)
+            await CheckBirthdayAsync();
 
         var data = await ApiClient.RequestMappedAsync("GetLiveRoomDetail", _roomId);
         long? liveStatus = data?.GetValueOrDefault("liveStatus") as long?;
@@ -199,6 +201,27 @@ public class LiveMonitor
         string? name = userInfo?.GetValueOrDefault("name")?.ToString();
         string? face = userInfo?.GetValueOrDefault("face")?.ToString();
         string? cover = userInfo?.GetValueOrDefault("cover")?.ToString();
+        string? birthday = userInfo?.GetValueOrDefault("birthday")?.ToString();
+
+        // 新模式：开播时从 GetUserInfo 顺带查生日
+        if (_ctx.Config.BirthdayCheckOnLiveOnly)
+        {
+            string today = DateTime.Now.ToString("MM-dd");
+            _isBirthday = false;
+            if (!string.IsNullOrEmpty(birthday))
+            {
+                if (_ctx.Config.FilterBirthday && birthday == "01-01")
+                {
+                    LLog.Info($"[Monitor:{_uid}] 生日={birthday}, 已过滤");
+                }
+                else if (birthday.Equals(today, StringComparison.OrdinalIgnoreCase) ||
+                         birthday.EndsWith(today, StringComparison.OrdinalIgnoreCase))
+                {
+                    _isBirthday = true;
+                    LLog.Info($"[Monitor:{_uid}] 生日={birthday}, 今日={today}, 匹配=true");
+                }
+            }
+        }
 
         // 持久化到实例字段，供后续循环使用
         _medalName = masterInfo?.GetValueOrDefault("medalName")?.ToString();
@@ -246,7 +269,7 @@ public class LiveMonitor
     }
 
     /// <summary>
-    /// 每日检查一次生日，仅在日期变更时请求API
+    /// 旧模式：每日检查一次生日，仅在日期变更时请求 API
     /// </summary>
     private async Task CheckBirthdayAsync()
     {

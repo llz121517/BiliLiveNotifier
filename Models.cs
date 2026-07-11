@@ -61,6 +61,7 @@ public class NotifierConfig
     public bool BirthdayText { get; set; } = true;
     public bool FilterBirthday { get; set; } = true;
     public bool AutoStart { get; set; } = false;
+    public bool BirthdayCheckOnLiveOnly { get; set; } = true;
 
     /// <summary>
     /// 从 JsonNode 解析为强类型配置
@@ -79,6 +80,7 @@ public class NotifierConfig
             BirthdayText = node["birthday_text"]?.GetValue<bool>() ?? true,
             FilterBirthday = node["skip_default_birthday"]?.GetValue<bool>() ?? true,
             AutoStart = node["auto_start"]?.GetValue<bool>() ?? false,
+            BirthdayCheckOnLiveOnly = node["birthday_check_on_live_only"]?.GetValue<bool>() ?? true,
         };
     }
 }
