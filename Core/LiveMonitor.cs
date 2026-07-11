@@ -193,14 +193,14 @@ public class LiveMonitor
         string? parentAreaName = roomData?.GetValueOrDefault("parentAreaName")?.ToString();
         string? areaName = roomData?.GetValueOrDefault("areaName")?.ToString();
         string? liveTime = roomData?.GetValueOrDefault("liveTime")?.ToString();
+        string? cover = roomData?.GetValueOrDefault("cover")?.ToString();
 
         // -- 主播信息 --
         var userInfo = await ApiClient.RequestMappedAsync("GetUserInfo", _uid);
         var masterInfo = await ApiClient.RequestMappedAsync("GetMasterInfo", _uid);
 
-        string? name = userInfo?.GetValueOrDefault("name")?.ToString();
-        string? face = userInfo?.GetValueOrDefault("face")?.ToString();
-        string? cover = userInfo?.GetValueOrDefault("cover")?.ToString();
+        string? name = masterInfo?.GetValueOrDefault("uname")?.ToString();
+        string? face = masterInfo?.GetValueOrDefault("face")?.ToString();
         string? birthday = userInfo?.GetValueOrDefault("birthday")?.ToString();
 
         // 新模式：开播时从 GetUserInfo 顺带查生日
@@ -225,7 +225,7 @@ public class LiveMonitor
 
         // 持久化到实例字段，供后续循环使用
         _medalName = masterInfo?.GetValueOrDefault("medalName")?.ToString();
-        _title = userInfo?.GetValueOrDefault("title")?.ToString();
+        _title = roomData?.GetValueOrDefault("title")?.ToString();
         _watchedNum = userInfo?.GetValueOrDefault("watchedNum") as long?;
         _time = ParseLiveTime(liveTime);
 
@@ -242,10 +242,14 @@ public class LiveMonitor
             ? $"亲爱的「{_medalName}」！今天是个特别的日子哦"
             : $"亲爱的「{_medalName}」！你关注的「{name}」开播啦！";
 
+        string toastSub = (_watchedNum == null)
+            ? $"标题：{_title}\n开播时间：{_time}"
+            : $"标题：{_title}\n开播时间：{_time}\n{_watchedNum} 人看过";
+
         await ToastNotifier.SendLiveNotificationAsync(
             headerTitle: "BiliLiveNotifier",
             title: toastTitle,
-            subtitle: $"标题：{_title}\n开播时间：{_time}\n{_watchedNum} 人看过",
+            subtitle: toastSub,
             coverUrl: coverUri,
             avatarUrl: avatarUri,
             liveUrl: $"https://live.bilibili.com/{_roomId}",
